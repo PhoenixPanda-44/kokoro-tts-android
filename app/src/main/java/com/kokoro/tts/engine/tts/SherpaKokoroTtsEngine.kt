@@ -29,48 +29,52 @@ class SherpaKokoroTtsEngine : KokoroTtsEngine {
         offlineTts != null
     }
 
-    override fun loadModel(modelInfo: KokoroModelInfo) = lock.withLock {
-        if (!modelInfo.isInstalled()) {
-            throw FileNotFoundException("Model files are incomplete in ${modelInfo.installDir.absolutePath}")
+    override fun loadModel(modelInfo: KokoroModelInfo) {
+        lock.withLock {
+            if (!modelInfo.isInstalled()) {
+                throw FileNotFoundException("Model files are incomplete in ${modelInfo.installDir.absolutePath}")
+            }
+
+            // STRICT SINGLE-MODEL RAM RULE:
+            // Always release and unload any previously active model first
+            unloadModelInternal()
+
+            Log.i(TAG, "Loading Kokoro model: ${modelInfo.type.displayName} from ${modelInfo.installDir.absolutePath}")
+
+            val numCores = Runtime.getRuntime().availableProcessors()
+            val numThreads = numCores.coerceIn(2, 4)
+
+            val kokoroConfig = OfflineTtsKokoroModelConfig(
+                model = modelInfo.modelFile.absolutePath,
+                voices = modelInfo.voicesFile.absolutePath,
+                tokens = modelInfo.tokensFile.absolutePath,
+                dataDir = modelInfo.espeakDataDir.absolutePath,
+                lengthScale = 1.0f
+            )
+
+            val modelConfig = OfflineTtsModelConfig(
+                kokoro = kokoroConfig,
+                numThreads = numThreads,
+                debug = false,
+                provider = "cpu"
+            )
+
+            val config = OfflineTtsConfig(
+                model = modelConfig,
+                ruleFsts = "",
+                maxNumSentences = 1
+            )
+
+            offlineTts = OfflineTts(assetManager = null, config = config)
+            activeModelType = modelInfo.type
+            Log.i(TAG, "Successfully loaded model: ${modelInfo.type.displayName}. Sample rate: ${offlineTts?.sampleRate()}")
         }
-
-        // STRICT SINGLE-MODEL RAM RULE:
-        // Always release and unload any previously active model first
-        unloadModelInternal()
-
-        Log.i(TAG, "Loading Kokoro model: ${modelInfo.type.displayName} from ${modelInfo.installDir.absolutePath}")
-
-        val numCores = Runtime.getRuntime().availableProcessors()
-        val numThreads = numCores.coerceIn(2, 4)
-
-        val kokoroConfig = OfflineTtsKokoroModelConfig(
-            model = modelInfo.modelFile.absolutePath,
-            voices = modelInfo.voicesFile.absolutePath,
-            tokens = modelInfo.tokensFile.absolutePath,
-            dataDir = modelInfo.espeakDataDir.absolutePath,
-            lengthScale = 1.0f
-        )
-
-        val modelConfig = OfflineTtsModelConfig(
-            kokoro = kokoroConfig,
-            numThreads = numThreads,
-            debug = false,
-            provider = "cpu"
-        )
-
-        val config = OfflineTtsConfig(
-            model = modelConfig,
-            ruleFsts = "",
-            maxNumSentences = 1
-        )
-
-        offlineTts = OfflineTts(assetManager = null, config = config)
-        activeModelType = modelInfo.type
-        Log.i(TAG, "Successfully loaded model: ${modelInfo.type.displayName}. Sample rate: ${offlineTts?.sampleRate()}")
     }
 
-    override fun unloadModel() = lock.withLock {
-        unloadModelInternal()
+    override fun unloadModel() {
+        lock.withLock {
+            unloadModelInternal()
+        }
     }
 
     private fun unloadModelInternal() {

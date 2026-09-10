@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -83,7 +84,9 @@ class ModelDownloader(
                     archiveFile = tempDownloadFile,
                     destinationDir = modelInfo.installDir
                 ) { file, count ->
-                    emit(DownloadState.Extracting(file, count))
+                    runBlocking {
+                        emit(DownloadState.Extracting(file, count))
+                    }
                 }
             }
 
