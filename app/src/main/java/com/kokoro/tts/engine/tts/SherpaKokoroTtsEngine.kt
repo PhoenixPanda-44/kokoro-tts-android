@@ -64,9 +64,9 @@ class SherpaKokoroTtsEngine : KokoroTtsEngine {
             maxNumSentences = 1
         )
 
-        offlineTts = OfflineTts(config = config)
+        offlineTts = OfflineTts(assetManager = null, config = config)
         activeModelType = modelInfo.type
-        Log.i(TAG, "Successfully loaded model: ${modelInfo.type.displayName}. Sample rate: ${offlineTts?.sampleRate}")
+        Log.i(TAG, "Successfully loaded model: ${modelInfo.type.displayName}. Sample rate: ${offlineTts?.sampleRate()}")
     }
 
     override fun unloadModel() = lock.withLock {
@@ -121,7 +121,7 @@ class SherpaKokoroTtsEngine : KokoroTtsEngine {
         var timeToFirstChunk = 0L
         var chunkCount = 0
         val accumulatedSamples = mutableListOf<Float>()
-        val sampleRate = if (tts.sampleRate > 0) tts.sampleRate else DEFAULT_SAMPLE_RATE
+        val sampleRate = if (tts.sampleRate() > 0) tts.sampleRate() else DEFAULT_SAMPLE_RATE
 
         val audio = tts.generateWithCallback(
             text = text,
