@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -32,3 +34,15 @@ jobs:
           name: KokoroTTS-arm64-v8a-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
+
+      - name: Update Latest Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          name: "Latest Debug Build (arm64-v8a)"
+          body: "Automated continuous build for Kokoro TTS Android (arm64-v8a)."
+          prerelease: true
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
