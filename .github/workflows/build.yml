@@ -29,17 +29,19 @@ jobs:
         run: |
           ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
 
-      - name: Save Build Log on Failure
-        if: failure()
+      - name: Save Build Log and Diagnostics
+        if: always()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan build-logs
+          git checkout --orphan build-diagnostic
           git rm -rf . || true
-          cp build.log failure.log
-          git add failure.log
-          git commit -m "build failure log for ${{ github.sha }}"
-          git push -f origin build-logs || true
+          [ -f build.log ] && cp build.log build.log || true
+          find . -name "*.apk" > apks-found.txt 2>&1 || true
+          find app/build/outputs > outputs-tree.txt 2>&1 || true
+          git add build.log apks-found.txt outputs-tree.txt 2>/dev/null || true
+          git commit -m "build diagnostic log" || true
+          git push -f origin build-diagnostic || true
 
       - name: Prepare Release APK
         run: |
