@@ -41,14 +41,17 @@ jobs:
           git commit -m "build failure log for ${{ github.sha }}"
           git push -f origin build-logs || true
 
-      - name: List Generated APKs
-        run: find app/build/outputs/ -name "*.apk" -ls
+      - name: Prepare Release APK
+        run: |
+          mkdir -p release-apks
+          find app/build/outputs/ -name "*.apk" -exec cp {} release-apks/KokoroTTS-arm64-v8a-debug.apk \;
+          ls -lh release-apks/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: KokoroTTS-arm64-v8a-debug
-          path: app/build/outputs/apk/**/*.apk
+          path: release-apks/KokoroTTS-arm64-v8a-debug.apk
           if-no-files-found: error
           retention-days: 7
 
@@ -60,6 +63,6 @@ jobs:
           name: "Latest Debug Build (arm64-v8a)"
           body: "Automated continuous build for Kokoro TTS Android (arm64-v8a)."
           prerelease: true
-          files: app/build/outputs/apk/**/*.apk
+          files: release-apks/KokoroTTS-arm64-v8a-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

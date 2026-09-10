@@ -19,14 +19,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-    }
-
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a")
-            isUniversalApk = false
+        ndk {
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
