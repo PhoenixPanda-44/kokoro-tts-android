@@ -57,9 +57,15 @@ data class TtsUiState(
 
 class TtsViewModel(
     application: Application,
-    private val ttsEngine: KokoroTtsEngine = SherpaKokoroTtsEngine(),
-    private val modelDownloader: ModelDownloader = ModelDownloader(application)
+    private val ttsEngine: KokoroTtsEngine,
+    private val modelDownloader: ModelDownloader
 ) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(
+        application = application,
+        ttsEngine = SherpaKokoroTtsEngine(),
+        modelDownloader = ModelDownloader(application)
+    )
 
     companion object {
         private const val TAG = "TtsViewModel"
