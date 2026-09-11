@@ -6,10 +6,9 @@ import com.kokoro.tts.data.model.ModelType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,8 +34,8 @@ class ModelDownloader(
         return KokoroModelInfo.fromStorage(modelsBaseDir, type)
     }
 
-    fun downloadAndExtract(type: ModelType): Flow<DownloadState> = flow {
-        emit(DownloadState.Idle)
+    fun downloadAndExtract(type: ModelType): Flow<DownloadState> = channelFlow {
+        send(DownloadState.Idle)
 
         val modelInfo = getModelInfo(type)
         val tempDownloadFile = File(context.cacheDir, type.archiveName)
@@ -52,7 +51,7 @@ class ModelDownloader(
                 try {
                     downloadFile(url, tempDownloadFile) { downloaded, total, speed ->
                         val progress = if (total > 0) downloaded.toFloat() / total.toFloat() else 0f
-                        emit(
+                        send(
                             DownloadState.Downloading(
                                 progress = progress,
                                 downloadedBytes = downloaded,
@@ -70,23 +69,21 @@ class ModelDownloader(
             }
 
             if (!downloadSuccess) {
-                emit(DownloadState.Error(
+                send(DownloadState.Error(
                     message = "Failed to download ${type.displayName}: ${lastException?.localizedMessage ?: "Unknown error"}",
                     throwable = lastException
                 ))
-                return@flow
+                return@channelFlow
             }
 
             // Extract archive
-            emit(DownloadState.Extracting("Initializing archive extraction...", 0))
+            send(DownloadState.Extracting("Initializing archive extraction...", 0))
             withContext(Dispatchers.IO) {
                 TarBz2Extractor.extract(
                     archiveFile = tempDownloadFile,
                     destinationDir = modelInfo.installDir
                 ) { file, count ->
-                    runBlocking {
-                        emit(DownloadState.Extracting(file, count))
-                    }
+                    trySend(DownloadState.Extracting(file, count))
                 }
             }
 
@@ -95,14 +92,14 @@ class ModelDownloader(
 
             // Verify installation
             if (modelInfo.isInstalled()) {
-                emit(DownloadState.Success)
+                send(DownloadState.Success)
             } else {
-                emit(DownloadState.Error("Extraction finished, but required model files were missing."))
+                send(DownloadState.Error("Extraction finished, but required model files were missing."))
             }
 
         } catch (e: Exception) {
             tempDownloadFile.delete()
-            emit(DownloadState.Error(
+            send(DownloadState.Error(
                 message = "Error during setup: ${e.localizedMessage ?: "Unknown error"}",
                 throwable = e
             ))
