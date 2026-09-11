@@ -206,7 +206,6 @@ class TtsViewModel(
                 } else if (state is DownloadState.Error) {
                     _uiState.update {
                         it.copy(
-                            downloadingModelType = null,
                             statusMessage = "Download failed: ${state.message}"
                         )
                     }

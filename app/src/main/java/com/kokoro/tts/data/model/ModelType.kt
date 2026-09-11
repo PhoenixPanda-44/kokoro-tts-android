@@ -11,34 +11,34 @@ enum class ModelType(
     val mirrorDownloadUrl: String
 ) {
     MULTI_LINGUAL_V1(
-        id = "kokoro-multi-lang-v1_0",
+        id = "kokoro-int8-multi-lang-v1_0",
         displayName = "Kokoro Multi-lingual v1.0 (int8)",
         description = "Supports English, Japanese, Mandarin, French, Spanish, Hindi, etc.",
-        estimatedDownloadSizeMb = 110,
+        estimatedDownloadSizeMb = 126,
         estimatedRamUsageMb = 160,
-        archiveName = "kokoro-multi-lang-v1_0.tar.bz2",
-        primaryDownloadUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2",
-        mirrorDownloadUrl = "https://huggingface.co/csukuangfj/sherpa-onnx-tts-kokoro-multi-lang-v1_0/resolve/main/kokoro-multi-lang-v1_0.tar.bz2"
+        archiveName = "kokoro-int8-multi-lang-v1_0.tar.bz2",
+        primaryDownloadUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2",
+        mirrorDownloadUrl = ""
     ),
     ENGLISH_FP32(
         id = "kokoro-en-v0_19",
         displayName = "Kokoro English v0.19 (fp32)",
         description = "Maximum audio precision and fidelity for English speech",
-        estimatedDownloadSizeMb = 320,
-        estimatedRamUsageMb = 420,
+        estimatedDownloadSizeMb = 305,
+        estimatedRamUsageMb = 380,
         archiveName = "kokoro-en-v0_19.tar.bz2",
         primaryDownloadUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-en-v0_19.tar.bz2",
-        mirrorDownloadUrl = "https://huggingface.co/csukuangfj/sherpa-onnx-tts-kokoro-en-v0_19/resolve/main/kokoro-en-v0_19.tar.bz2"
+        mirrorDownloadUrl = ""
     ),
     ENGLISH_INT8(
-        id = "kokoro-en-v0_19-int8",
+        id = "kokoro-int8-en-v0_19",
         displayName = "Kokoro English v0.19 (int8)",
         description = "Ultra-lean English model with lowest RAM and fastest download",
-        estimatedDownloadSizeMb = 85,
+        estimatedDownloadSizeMb = 98,
         estimatedRamUsageMb = 120,
-        archiveName = "kokoro-en-v0_19-int8.tar.bz2",
-        primaryDownloadUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-en-v0_19-int8.tar.bz2",
-        mirrorDownloadUrl = "https://huggingface.co/csukuangfj/sherpa-onnx-tts-kokoro-en-v0_19/resolve/main/kokoro-en-v0_19-int8.tar.bz2"
+        archiveName = "kokoro-int8-en-v0_19.tar.bz2",
+        primaryDownloadUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-en-v0_19.tar.bz2",
+        mirrorDownloadUrl = ""
     );
 
     companion object {

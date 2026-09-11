@@ -68,12 +68,14 @@ object TarBz2Extractor {
     }
 
     private fun stripTopLevelFolder(entryPath: String): String {
-        val parts = entryPath.split('/').filter { it.isNotBlank() }
+        val parts = entryPath.split('/').filter { it.isNotBlank() && it != "." }
         return if (parts.size > 1 && (parts[0].startsWith("kokoro") || parts[0].contains("sherpa"))) {
-            // e.g. kokoro-multi-lang-v1_0/model.onnx -> model.onnx
+            // e.g. kokoro-int8-en-v0_19/model.int8.onnx -> model.int8.onnx
             parts.drop(1).joinToString("/")
+        } else if (parts.size == 1 && (parts[0].startsWith("kokoro") || parts[0].contains("sherpa"))) {
+            "" // Skip root directory entry itself
         } else {
-            entryPath.trimStart('/')
+            parts.joinToString("/")
         }
     }
 }

@@ -42,7 +42,7 @@ class ModelDownloader(
 
         try {
             // Attempt primary URL first, then fallback to mirror
-            val urls = listOf(type.primaryDownloadUrl, type.mirrorDownloadUrl)
+            val urls = listOf(type.primaryDownloadUrl, type.mirrorDownloadUrl).filter { it.isNotBlank() }
             var downloadSuccess = false
             var lastException: Exception? = null
 
@@ -116,47 +116,48 @@ class ModelDownloader(
             .header("User-Agent", "KokoroTTS-Android/1.0")
             .build()
 
-        val response: Response = okHttpClient.newCall(request).execute()
-        if (!response.isSuccessful) {
-            throw IOException("HTTP error code: ${response.code} for URL: $url")
-        }
-
-        val body = response.body ?: throw IOException("Empty response body from $url")
-        val contentLength = body.contentLength()
-
-        destinationFile.parentFile?.mkdirs()
-        var downloadedBytes = 0L
-        var lastTime = System.currentTimeMillis()
-        var bytesSinceLastTime = 0L
-        var currentSpeed = 0L
-
-        body.byteStream().use { input ->
-            FileOutputStream(destinationFile).use { output ->
-                val buffer = ByteArray(32768)
-                var bytesRead: Int
-
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    if (!currentCoroutineContext().isActive) {
-                        throw IOException("Download cancelled by user")
-                    }
-                    output.write(buffer, 0, bytesRead)
-                    downloadedBytes += bytesRead
-                    bytesSinceLastTime += bytesRead
-
-                    val now = System.currentTimeMillis()
-                    val duration = now - lastTime
-                    if (duration >= 500) { // Update speed estimate twice a second
-                        currentSpeed = (bytesSinceLastTime * 1000) / duration
-                        lastTime = now
-                        bytesSinceLastTime = 0L
-                        onProgress(downloadedBytes, contentLength, currentSpeed)
-                    }
-                }
-                output.flush()
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw IOException("HTTP error code: ${response.code} for URL: $url")
             }
+
+            val body = response.body ?: throw IOException("Empty response body from $url")
+            val contentLength = body.contentLength()
+
+            destinationFile.parentFile?.mkdirs()
+            var downloadedBytes = 0L
+            var lastTime = System.currentTimeMillis()
+            var bytesSinceLastTime = 0L
+            var currentSpeed = 0L
+
+            body.byteStream().use { input ->
+                FileOutputStream(destinationFile).use { output ->
+                    val buffer = ByteArray(32768)
+                    var bytesRead: Int
+
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        if (!currentCoroutineContext().isActive) {
+                            throw IOException("Download cancelled by user")
+                        }
+                        output.write(buffer, 0, bytesRead)
+                        downloadedBytes += bytesRead
+                        bytesSinceLastTime += bytesRead
+
+                        val now = System.currentTimeMillis()
+                        val duration = now - lastTime
+                        if (duration >= 500) { // Update speed estimate twice a second
+                            currentSpeed = (bytesSinceLastTime * 1000) / duration
+                            lastTime = now
+                            bytesSinceLastTime = 0L
+                            onProgress(downloadedBytes, contentLength, currentSpeed)
+                        }
+                    }
+                    output.flush()
+                }
+            }
+            // Final progress tick
+            onProgress(downloadedBytes, contentLength, currentSpeed)
         }
-        // Final progress tick
-        onProgress(downloadedBytes, contentLength, currentSpeed)
     }
 
     fun deleteModel(type: ModelType): Boolean {
