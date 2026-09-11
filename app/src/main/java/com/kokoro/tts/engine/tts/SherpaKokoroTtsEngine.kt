@@ -122,46 +122,31 @@ class SherpaKokoroTtsEngine : KokoroTtsEngine {
         val tts = offlineTts ?: throw IllegalStateException("No Kokoro model loaded in RAM. Please load a model first.")
 
         val startTime = System.currentTimeMillis()
-        var timeToFirstChunk = 0L
-        var chunkCount = 0
-        val accumulatedSamples = mutableListOf<Float>()
-        val sampleRate = if (tts.sampleRate() > 0) tts.sampleRate() else DEFAULT_SAMPLE_RATE
+        val audio = tts.generate(text = text, sid = speakerId, speed = speed)
+        val synthesisDuration = System.currentTimeMillis() - startTime
 
-        val audio = tts.generateWithCallback(
-            text = text,
-            sid = speakerId,
-            speed = speed
-        ) { chunkSamples ->
-            if (chunkCount == 0) {
-                timeToFirstChunk = System.currentTimeMillis() - startTime
-            }
-            chunkCount++
+        val sampleRate = if (audio.sampleRate > 0) audio.sampleRate else (if (tts.sampleRate() > 0) tts.sampleRate() else DEFAULT_SAMPLE_RATE)
+        val audioDurationSec = if (sampleRate > 0) audio.samples.size.toFloat() / sampleRate else 0f
+        val rtf = if (audioDurationSec > 0) (synthesisDuration / 1000f) / audioDurationSec else 0f
 
-            for (sample in chunkSamples) {
-                accumulatedSamples.add(sample)
-            }
+        // Stream audio in 200ms chunks (4800 samples at 24kHz) for smooth streaming playback
+        val chunkSize = 4800
+        val totalSamples = audio.samples
+        var offset = 0
 
-            val continueSynthesis = onChunk(
+        while (offset < totalSamples.size) {
+            val length = minOf(chunkSize, totalSamples.size - offset)
+            val chunkSamples = totalSamples.copyOfRange(offset, offset + length)
+            val continuePlayback = onChunk(
                 AudioChunk(
                     samples = chunkSamples,
                     sampleRate = sampleRate,
                     isFinal = false
                 )
             )
-
-            // Return 1 to continue, 0 to abort
-            if (continueSynthesis) 1 else 0
+            if (!continuePlayback) break
+            offset += length
         }
-
-        val totalDuration = System.currentTimeMillis() - startTime
-        val finalSamples = if (accumulatedSamples.isNotEmpty()) {
-            accumulatedSamples.toFloatArray()
-        } else {
-            audio.samples
-        }
-
-        val audioDurationSec = if (sampleRate > 0) finalSamples.size.toFloat() / sampleRate else 0f
-        val rtf = if (audioDurationSec > 0) (totalDuration / 1000f) / audioDurationSec else 0f
 
         // Emit final chunk indicator
         onChunk(
@@ -173,10 +158,10 @@ class SherpaKokoroTtsEngine : KokoroTtsEngine {
         )
 
         return SynthesisResult(
-            samples = finalSamples,
+            samples = audio.samples,
             sampleRate = sampleRate,
-            latencyMs = if (timeToFirstChunk > 0) timeToFirstChunk else totalDuration,
-            synthesisDurationMs = totalDuration,
+            latencyMs = synthesisDuration,
+            synthesisDurationMs = synthesisDuration,
             audioDurationSeconds = audioDurationSec,
             rtf = rtf
         )
