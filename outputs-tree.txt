@@ -1,0 +1,7 @@
+app/build/outputs
+app/build/outputs/logs
+app/build/outputs/logs/manifest-merger-debug-report.txt
+app/build/outputs/apk
+app/build/outputs/apk/debug
+app/build/outputs/apk/debug/output-metadata.json
+app/build/outputs/apk/debug/app-debug.apk
